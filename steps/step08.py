@@ -1,9 +1,5 @@
 '''
-# Step7 역전파 자동화
-'''
-'''
-# Step7 역전파 자동화
-Define-by-run: 딥러닝에서 수행하는 계산들을 계산 시점에 연결하는 방식, 동적 계산 그래프라고도 한다.
+# Step8 재귀에서 반복문으로
 '''
 import numpy as np
 
@@ -16,15 +12,18 @@ class Variable:
 
     def set_creator(self, func):
         self.creator = func
-
+        
     def backward(self):
-        f = self.creator
-        if f is not None:
-            x = f.input
-            x.grad = f.backward(self.grad)
-            x.backward()
+        funcs = [self.creator]
+        while funcs:
+            f = funcs.pop()
+            x, y = f.input, f.output
+            x.grad = f.backward(y.grad)
+            
+            if x.creator is not None:
+                funcs.append(x.creator)
 
-
+       
 class Function:
     def __call__(self, input):
         x = input.data
@@ -46,7 +45,7 @@ class Square(Function):
     def forward(self, x):
         y = x ** 2
         return y
-    
+
     def backward(self, gy):
         x = self.input.data
         gx = 2 * x * gy
@@ -65,7 +64,6 @@ class Exp(Function):
 
 
 if __name__ == '__main__':
-    # 7.1 역전파 자동화의 시작
     A = Square()
     B = Exp()
     C = Square()
@@ -74,32 +72,7 @@ if __name__ == '__main__':
     a = A(x)
     b = B(a)
     y = C(b)
-    
-    print(y.creator)
-    print(y.creator.input)
-    print(y.creator.input.creator)
-    print(y.creator.input.creator.input)
-    print(y.creator.input.creator.input.creator)
-    print(y.creator.input.creator.input.creator.input)
 
-    # 7.2 역전파 도전!
-    y.grad = np.array(1.0)
-
-    C = y.creator
-    b = C.input
-    b.grad = C.backward(y.grad)
-
-    B = b.creator
-    a = B.input
-    a.grad = B.backward(b.grad)
-
-    A = a.creator
-    x = A.input
-    x.grad = A.backward(a.grad)
-
-    print(x.grad)
-
-    # 7.3 Backward 메서드 추가
     y.grad = np.array(1.0)
     y.backward()
     print(x.grad)
