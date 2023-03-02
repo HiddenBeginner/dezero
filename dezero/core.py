@@ -173,7 +173,7 @@ class Pow(Function):
         return y
 
     def backward(self, gy):
-        x = self.inputs
+        x,  = self.inputs
         c = self.c
         gx = gy * c * x ** (c - 1)
         return gx
