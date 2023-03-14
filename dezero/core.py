@@ -3,6 +3,8 @@ import weakref
 
 import numpy as np
 
+import dezero
+
 
 class Config:
     enable_backprop = True
@@ -52,6 +54,26 @@ class Variable:
 
     def cleargrad(self):
         self.grad = None
+    
+    def reshape(self, *shape):
+        # *shape가 (shape, )로 들어오기 해주는 작업
+        # 튜플이나 리스트를 주면 꺼내쓴다.
+        # 여러개의 숫자가 들어오면 shape를 그대로 사용한다.
+        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+            shape = shape[0]
+        return dezero.functions.reshape(self, shape)
+
+    def transpose(self, *axes):
+        if len(axes) == 0:
+            axes = None
+        elif len(axes) == 1:
+            if isinstance(axes, (tuple, list)) or axes[0] is None:
+                axes = axes[0]
+        return dezero.functions.transpose(self, axes)
+
+    @property
+    def T(self):
+        return dezero.functions.transpose(self)
 
     def backward(self, retain_grad=False, create_graph=False):
         if self.grad is None:
