@@ -5,6 +5,7 @@ if is_simple_core:
                                     no_grad, setup_variable, using_config)
 
 else:
+    import dezero.functions
     from dezero.core import (Function, Variable, as_array, as_variable,
                              no_grad, setup_variable, using_config)
 
