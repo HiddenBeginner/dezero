@@ -205,7 +205,7 @@ class Sub(Function):
         if self.x0_shape != self.x1_shape:  # for broadcast
             gx0 = dezero.functions.sum_to(gx0, self.x0_shape)
             gx1 = dezero.functions.sum_to(gx1, self.x1_shape)
-        return gx0, 
+        return gx0, gx1
 
 
 class Pow(Function):
