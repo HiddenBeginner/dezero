@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import numpy as np
+
 
 def sum_to(x, shape):
     """
@@ -114,3 +116,13 @@ def plot_dot_graph(output, verbose=True, to_file='graph.png'):
         return display.Image(filename=to_file)
     except:
         pass
+
+
+def logsumexp(x, axis=1):
+    m = x.max(axis=axis, keepdims=True)
+    y = x - m
+    y = np.exp(y)
+    s = y.sum(axis=axis, keepdims=True)
+    s = np.log(s)
+    m += s
+    return m
