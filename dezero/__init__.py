@@ -10,6 +10,7 @@ else:
     from dezero.core import (Function, Parameter, Variable, as_array,
                              as_variable, no_grad, setup_variable,
                              using_config)
+    from dezero.dataloaders import DataLoader
     from dezero.layers import Layer
     from dezero.models import Model
 
