@@ -7,6 +7,7 @@ if is_simple_core:
 else:
     import dezero.datasets
     import dezero.functions
+    import dezero.transforms
     from dezero.core import (Function, Parameter, Variable, as_array,
                              as_variable, no_grad, setup_variable,
                              using_config)
