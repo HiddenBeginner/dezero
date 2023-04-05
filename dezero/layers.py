@@ -1,7 +1,9 @@
+import os
 import weakref
 
 import numpy as np
 
+import dezero
 import dezero.functions as F
 from dezero.core import Parameter
 
@@ -22,6 +24,24 @@ class Layer:
         self.inputs = [weakref.ref(x) for x in inputs]
         self.outputs = [weakref.ref(y) for y in outputs]
         return outputs if len(outputs) > 1 else outputs[0]
+
+    def _flatten_params(self, params_dict, parent_key=''):
+        for name in self._params:
+            obj = self.__dict__[name]
+            key = parent_key + '.' + name if parent_key else name
+
+            if isinstance(obj, Layer):
+                obj._flatten_params(params_dict, key)
+            else:
+                params_dict[key] = obj
+
+    def to_cpu(self):
+        for param in self.params():
+            param.to_cpu()
+
+    def to_gpu(self):
+        for param in self.params():
+            param.to_gpu()
         
     def forward(self, inputs):
         NotImplementedError()
@@ -37,6 +57,25 @@ class Layer:
     def cleargrads(self):
         for param in self.params():
             param.cleargrad()
+    
+    def save_weights(self, path):
+        self.to_cpu()
+        params_dict = {}
+        self._flatten_params(params_dict)
+        array_dict = {k: v.data for k, v in params_dict.items() if v is not None}
+        try:
+            np.savez_compressed(path, **array_dict)
+        except (Exception, KeyboardInterrupt) as e:
+            if os.path.exists(path):
+                os.remove(path)
+            raise
+
+    def load_weights(self, path):
+        npz = np.load(path, allow_pickle=True)
+        params_dict = {}
+        self._flatten_params(params_dict)
+        for key, param in params_dict.items():
+            param.data = npz[key]
 
 
 class Linear(Layer):
@@ -55,16 +94,17 @@ class Linear(Layer):
         else:
             self.b = Parameter(np.zeros(out_size, dtype=dtype), name='b')
 
-    def _init_W(self):
+    def _init_W(self, xp=np):
         I, O = self.in_size, self.out_size
-        W_data = np.random.randn(I, O).astype(self.dtype) * np.sqrt(1. / I)
+        W_data = xp.random.randn(I, O).astype(self.dtype) * np.sqrt(1. / I)
         self.W.data = W_data
 
     def forward(self, x):
         # 데이터를 흘려보내는 시점에 가중치 초기화
         if self.W.data is None:
             self.in_size = x.shape[1]
-            self._init_W()
+            xp = dezero.cuda.get_array_module(x)
+            self._init_W(xp)
 
         y = F.linear(x, self.W, self.b)
         return y

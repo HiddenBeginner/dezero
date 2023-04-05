@@ -1,12 +1,19 @@
 import numpy as np
 
+import dezero
 from dezero import utils
 from dezero.core import Function, Variable, as_array, as_variable
 
+try:
+    import cupyx
+except:
+    pass
+    
 
 class Exp(Function):
     def forward(self, x):
-        y = np.exp(x)
+        xp = dezero.cuda.get_array_module(x)
+        y = xp.exp(x)
         return y
 
     def backward(self, gy):
@@ -21,7 +28,8 @@ def exp(x):
 
 class Sin(Function):
     def forward(self, x):
-        y = np.sin(x)
+        xp = dezero.cuda.get_array_module(x)
+        y = xp.sin(x)
         return y
 
     def backward(self, gy):
@@ -36,7 +44,8 @@ def sin(x):
 
 class Cos(Function):
     def forward(self, x):
-        y = np.cos(x)
+        xp = dezero.cuda.get_array_module(x)
+        y = xp.cos(x)
         return y
 
     def backward(self, gy):
@@ -51,7 +60,8 @@ def cos(x):
 
 class Tanh(Function):
     def forward(self, x):
-        y = np.tanh(x)
+        xp = dezero.cuda.get_array_module(x)
+        y = xp.tanh(x)
         return y
 
     def backward(self, gy):
@@ -131,7 +141,8 @@ class BroadcastTo(Function):
 
     def forward(self, x):
         self.x_shape = x.shape
-        y = np.broadcast_to(x, self.shape)
+        xp = dezero.cuda.get_array_module(x)
+        y = xp.broadcast_to(x, self.shape)
         return y
 
     def backward(self, gy):
@@ -220,7 +231,8 @@ def linear(x, W, b=None):
 
 class Sigmoid(Function):
     def forward(self, x):
-        y = 1. / (1 + np.exp(-x))
+        xp = dezero.cuda.get_array_module(x)
+        y = 1. / (1 + xp.exp(-x))
         return y
 
     def backward(self, gy):
@@ -238,8 +250,9 @@ class Softmax(Function):
         self.axis = axis
 
     def forward(self, x):
+        xp = dezero.cuda.get_array_module(x)
         y = x - x.max(axis=self.axis, keepdims=True)
-        y = np.exp(y)
+        y = xp.exp(y)
         y /= y.sum(axis=self.axis, keepdims=True)
         return y
 
@@ -274,8 +287,13 @@ class GetItemGrad(Function):
         self.in_shape = in_shape
 
     def forward(self, gy):
-        gx = np.zeros(self.in_shape, dtype=gy.dtype)
-        np.add.at(gx, self.slices, gy)
+        xp = dezero.cuda.get_array_module(gy)
+        gx = xp.zeros(self.in_shape, dtype=gy.dtype)
+
+        if xp is np:
+            np.add.at(gx, self.slices, gy)
+        else:
+            cupyx.scatter_add(gx, self.slices, gy)
         return gx
 
     def backward(self, ggx):
@@ -309,7 +327,8 @@ class SoftmaxCrossEntropy(Function):
 
         gy *= 1/N
         y = softmax(x)
-        t_onehot = np.eye(CLS_NUM, dtype=t.dtype)[t.data]  # np.eye에서 label에 대응하는 row, 즉 one-hot vector를 갖고 옴
+        xp = dezero.cuda.get_array_module(t.data)
+        t_onehot = xp.eye(CLS_NUM, dtype=t.dtype)[t.data]  # np.eye에서 label에 대응하는 row, 즉 one-hot vector를 갖고 옴
         y = (y - t_onehot) * gy
         return y
     
@@ -329,7 +348,8 @@ def accuracy(y, t):
 
 class ReLU(Function):
     def forward(self, x):
-        y = np.maximum(x, 0.0)
+        xp = dezero.cuda.get_array_module(x)
+        y = xp.maximum(x, 0.0)
         return y
 
     def  backward(self, gy):
@@ -341,3 +361,16 @@ class ReLU(Function):
 
 def relu(x):
     return ReLU()(x)
+
+
+def dropout(x, dropout_ratio=0.5):
+    x = as_variable(x)
+    
+    if dezero.Config.train:
+        xp = dezero.cuda.get_array_module(x)
+        mask = xp.random.rand(*x.shape) > dropout_ratio
+        scale = xp.array(1.0 - dropout_ratio).astype(x.dtype)
+        y = x * mask / scale
+        return y
+    else:
+        return x

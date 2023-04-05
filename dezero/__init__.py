@@ -8,8 +8,8 @@ else:
     import dezero.datasets
     import dezero.functions
     import dezero.transforms
-    from dezero.core import (Function, Parameter, Variable, as_array,
-                             as_variable, no_grad, setup_variable,
+    from dezero.core import (Config, Function, Parameter, Variable, as_array,
+                             as_variable, no_grad, setup_variable, test_mode,
                              using_config)
     from dezero.dataloaders import DataLoader
     from dezero.layers import Layer
