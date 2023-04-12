@@ -112,3 +112,19 @@ class MNIST(Dataset):
     @staticmethod
     def labels():
         return {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9'}
+
+
+class SineCurve(Dataset):
+    def prepare(self):
+        num_data = 1000
+        dtype = np.float64
+
+        x = np.linspace(0, 2 * np.pi, num_data)
+        noise = np.random.uniform(-0.05, 0.05, size=x.shape)
+        if self.train:
+            y = np.sin(x) + noise
+        else:
+            y = np.cos(x)
+        y = y.astype(dtype)
+        self.data = y[:-1][:, np.newaxis]
+        self.label = y[1:][:, np.newaxis]

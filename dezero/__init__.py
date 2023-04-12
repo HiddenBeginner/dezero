@@ -15,4 +15,7 @@ else:
     from dezero.layers import Layer
     from dezero.models import Model
 
+import dezero.cuda
+import dezero.optimizers
+
 setup_variable()

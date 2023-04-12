@@ -62,6 +62,9 @@ class Variable:
 
     def cleargrad(self):
         self.grad = None
+
+    def unchain(self):
+        self.creator = None
     
     def reshape(self, *shape):
         # *shape가 (shape, )로 들어오기 해주는 작업
@@ -97,7 +100,7 @@ class Variable:
     def backward(self, retain_grad=False, create_graph=False):
         if self.grad is None:
             xp = dezero.cuda.get_array_module(self.data)
-            self.grad = Variable(np.ones_like(self.data))
+            self.grad = Variable(xp.ones_like(self.data))
 
         funcs = []
         seen_set = set()
@@ -130,6 +133,16 @@ class Variable:
             if not retain_grad:
                 for y in f.outputs:
                     y().grad = None
+
+    def unchain_backward(self):
+        if self.creator is not None:
+            funcs = [self.creator]
+            while funcs:
+                f = funcs.pop()
+                for x in f.inputs:
+                    if x.creator is not None:
+                        funcs.append(x.creator)
+                        x.unchain()
 
 
 class Parameter(Variable):
