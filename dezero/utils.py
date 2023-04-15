@@ -170,3 +170,24 @@ def get_file(url, file_name=None):
 
 def get_conv_outsize(input_size, kernel_size, stride, pad):
     return (input_size + 2 * pad - kernel_size) // stride + 1
+
+
+def pair(x):
+    if isinstance(x, int):
+        return (x, x)
+    elif isinstance(x, tuple):
+        assert len(x) == 2
+        return x
+    else:
+        raise ValueError
+
+
+def max_backward_shape(x, axis):
+    if axis is None:
+        axis = range(x.ndim)
+    elif isinstance(axis, int):
+        axis = (axis, )
+    else:
+        axis = axis
+    shape = [s if ax not in axis else 1 for ax, s in enumerate(x.shape)]
+    return shape
